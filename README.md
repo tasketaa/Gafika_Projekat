@@ -1,1 +1,1 @@
-# Gafika_Projekat
+# Grafika_Projekat
