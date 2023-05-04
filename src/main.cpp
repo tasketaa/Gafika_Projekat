@@ -168,7 +168,7 @@ int main() {
 
     // load models
     // -----------
-    Model ourModel("resources/objects/fairytower/FairyTower.obj");
+    Model ourModel("resources/objects/kucanabrdu/A54GBYEII07GV8OC2EIX7M6TW.obj");
     ourModel.SetShaderTextureNamePrefix("material.");
 
 
