@@ -32,7 +32,6 @@ unsigned int loadCubemap(vector<std::string> faces);
 
 unsigned int loadTexture(char const * path, bool gammaCorrection);
 
-
 // settings
 const unsigned int SCR_WIDTH = 800;
 const unsigned int SCR_HEIGHT = 600;
@@ -47,21 +46,20 @@ bool firstMouse = true;
 float deltaTime = 0.0f;
 float lastFrame = 0.0f;
 
-bool spotLightOn = false;
 bool blinn = true;
+bool spotLightOn = false;
 
 glm::vec3 lightPosition(-4.5f, 2.5f, 2.0f);
-
 
 struct ProgramState {
     glm::vec3 clearColor = glm::vec3(0);
     bool ImGuiEnabled = false;
     Camera camera;
     bool CameraMouseMovementUpdateEnabled = true;
-    glm::vec3 theHouseOnTheHillPosition = glm::vec3(0.0f);
-    float theHouseOnTheHillScale = 1.0f;
-    DirLight dirLight;
+    glm::vec3 houseOnTheHillPosition = glm::vec3(0.0f);
+    float houseOnTheHillScale = 1.0f;
     PointLight pointLight;
+    DirLight dirLight;
     SpotLight spotLight;
     ProgramState()
             : camera(glm::vec3(0.0f, 0.0f, 3.0f)) {}
@@ -141,7 +139,7 @@ int main() {
     }
 
     // tell stb_image.h to flip loaded texture's on the y-axis (before loading model).
-    stbi_set_flip_vertically_on_load(false);
+    stbi_set_flip_vertically_on_load(true);
 
     programState = new ProgramState;
     programState->LoadFromFile("resources/program_state.txt");
@@ -163,15 +161,25 @@ int main() {
     // -----------------------------
     glEnable(GL_DEPTH_TEST);
 
+    // Face culling
+    glEnable(GL_CULL_FACE);
+    glCullFace(GL_BACK);
+
+    // Blending
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
     // build and compile shaders
     // -------------------------
     Shader ourShader("resources/shaders/model_lighting.vs", "resources/shaders/model_lighting.fs");
-    Shader cloudShader("resources/shaders/clouds.vs", "resources/shaders/clouds.fs");
     Shader skyboxShader("resources/shaders/skybox.vs", "resources/shaders/skybox.fs");
+    Shader cloudShader("resources/shaders/clouds.vs", "resources/shaders/clouds.fs");
 
     // load models
     // -----------
+    stbi_set_flip_vertically_on_load(false);
     Model ourModel("resources/objects/kucanabrdu/A54GBYEII07GV8OC2EIX7M6TW.obj");
+    stbi_set_flip_vertically_on_load(true);
     ourModel.SetShaderTextureNamePrefix("material.");
 
 
@@ -221,18 +229,16 @@ int main() {
 
 
     float transparentVertices[] = {
-    // positions         // texture Coords (swapped y coordinates because texture is flipped upside down)
+            // positions         // texture Coords (swapped y coordinates because texture is flipped upside down)
             0.0f,  0.5f,  0.0f,  0.0f,  0.0f,
             0.0f, -0.5f,  0.0f,  0.0f,  1.0f,
             1.0f, -0.5f,  0.0f,  1.0f,  1.0f,
             0.0f,  0.5f,  0.0f,  0.0f,  0.0f,
             1.0f, -0.5f,  0.0f,  1.0f,  1.0f,
-            1.0f,  0.5f,  0.0f,  0.0f,  1.0f,
             1.0f,  0.5f,  0.0f,  1.0f,  0.0f
     };
 
-
-    // transparent VAO
+    //transparent VAO
     unsigned int transparentVAO, transparentVBO;
     glGenVertexArrays(1, &transparentVAO);
     glGenBuffers(1, &transparentVBO);
@@ -240,9 +246,9 @@ int main() {
     glBindBuffer(GL_ARRAY_BUFFER, transparentVBO);
     glBufferData(GL_ARRAY_BUFFER, sizeof(transparentVertices), transparentVertices, GL_STATIC_DRAW);
     glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(1);
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
     glBindVertexArray(0);
     vector<glm::vec3> clouds
             {
@@ -256,7 +262,6 @@ int main() {
 
     stbi_set_flip_vertically_on_load(false);
 
-
     // skybox VAO
     unsigned int skyboxVAO, skyboxVBO;
     glGenVertexArrays(1, &skyboxVAO);
@@ -267,23 +272,25 @@ int main() {
     glEnableVertexAttribArray(0);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
 
-    vector<std::string> faces {
+    vector<std::string> faces
+            {
                     FileSystem::getPath("resources/textures/skybox/right.jpg"),
                     FileSystem::getPath("resources/textures/skybox/left.jpg"),
                     FileSystem::getPath("resources/textures/skybox/top.jpg"),
                     FileSystem::getPath("resources/textures/skybox/bottom.jpg"),
                     FileSystem::getPath("resources/textures/skybox/front.jpg"),
                     FileSystem::getPath("resources/textures/skybox/back.jpg")
-    };
+            };
 
     unsigned int cubemapTexture = loadCubemap(faces);
     skyboxShader.use();
     skyboxShader.setInt("skybox", 0);
+    stbi_set_flip_vertically_on_load(false);
+    // draw in wireframe
+    //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+
+    unsigned int transparentTexture = loadTexture(FileSystem::getPath("resources/textures/cloud1.png").c_str(), true);
     stbi_set_flip_vertically_on_load(true);
-
-
-    unsigned int transparentTexture = loadTexture(FileSystem::getPath("resources/textures/cloud2.png").c_str(), true);
-
     cloudShader.use();
     cloudShader.setInt("texture1", 0);
 
@@ -310,7 +317,6 @@ int main() {
         // don't forget to enable shader before setting uniforms
         ourShader.use();
         setLights(ourShader);
-        
         // view/projection transformations
         glm::mat4 projection = glm::perspective(glm::radians(programState->camera.Zoom),
                                                 (float) SCR_WIDTH / (float) SCR_HEIGHT, 0.1f, 100.0f);
@@ -322,11 +328,13 @@ int main() {
         // render the loaded model
         glm::mat4 model = glm::mat4(1.0f);
         model = glm::translate(model,
-                               programState->theHouseOnTheHillPosition); // translate it down so it's at the center of the scene
-        model = glm::scale(model, glm::vec3(programState->theHouseOnTheHillScale));    // it's a bit too big for our scene, so scale it down
+                               programState->houseOnTheHillPosition); // translate it down so it's at the center of the scene
+        model = glm::scale(model, glm::vec3(programState->houseOnTheHillScale));    // it's a bit too big for our scene, so scale it down
         ourShader.setMat4("model", model);
         ourModel.Draw(ourShader);
 
+
+        glDisable(GL_CULL_FACE);
 
         //clouds (blending)
         cloudShader.use();
@@ -344,7 +352,7 @@ int main() {
             cloudShader.setMat4("model", model);
             glDrawArrays(GL_TRIANGLES, 0, 6);
         }
-
+        glEnable(GL_CULL_FACE);
 
         // draw skybox as last
         glDepthFunc(GL_LEQUAL);  // change depth function so depth test passes when values are equal to depth buffer's content
@@ -359,7 +367,6 @@ int main() {
         glDrawArrays(GL_TRIANGLES, 0, 36);
         glBindVertexArray(0);
         glDepthFunc(GL_LESS); // set depth function back to default
-
 
         if (programState->ImGuiEnabled)
             DrawImGui(programState);
@@ -449,8 +456,8 @@ void DrawImGui(ProgramState *programState) {
         ImGui::Text("Hello text");
         ImGui::SliderFloat("Float slider", &f, 0.0, 1.0);
         ImGui::ColorEdit3("Background color", (float *) &programState->clearColor);
-        ImGui::DragFloat3("The House on the Hill position", (float*)&programState->theHouseOnTheHillPosition);
-        ImGui::DragFloat("The House on the Hill scale", &programState->theHouseOnTheHillScale, 0.05, 0.1, 4.0);
+        ImGui::DragFloat3("The House on the Hill position", (float*)&programState->houseOnTheHillPosition);
+        ImGui::DragFloat("The House on the Hill scale", &programState->houseOnTheHillScale, 0.05, 0.1, 4.0);
 
         ImGui::DragFloat("pointLight.constant", &programState->pointLight.constant, 0.05, 0.0, 1.0);
         ImGui::DragFloat("pointLight.linear", &programState->pointLight.linear, 0.05, 0.0, 1.0);
@@ -562,7 +569,6 @@ unsigned int loadCubemap(vector<std::string> faces)
 
     return textureID;
 }
-
 
 unsigned int loadTexture(char const * path, bool gammaCorrection)
 {
