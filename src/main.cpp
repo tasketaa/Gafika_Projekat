@@ -32,6 +32,8 @@ unsigned int loadCubemap(vector<std::string> faces);
 
 unsigned int loadTexture(char const * path, bool gammaCorrection);
 
+void renderQuad();
+
 // settings
 const unsigned int SCR_WIDTH = 800;
 const unsigned int SCR_HEIGHT = 600;
@@ -48,6 +50,9 @@ float lastFrame = 0.0f;
 
 bool blinn = true;
 bool spotLightOn = false;
+bool hdr = false;
+bool bloom = false;
+float exposure = 1.0f;
 
 glm::vec3 lightPosition(-4.5f, 2.5f, 2.0f);
 
@@ -174,6 +179,8 @@ int main() {
     Shader ourShader("resources/shaders/model_lighting.vs", "resources/shaders/model_lighting.fs");
     Shader skyboxShader("resources/shaders/skybox.vs", "resources/shaders/skybox.fs");
     Shader cloudShader("resources/shaders/clouds.vs", "resources/shaders/clouds.fs");
+    Shader hdrShader("resources/shaders/hdr.vs", "resources/shaders/hdr.fs");
+    Shader bloomShader("resources/shaders/blur.vs", "resources/shaders/blur.fs");
 
     // load models
     // -----------
@@ -283,16 +290,77 @@ int main() {
             };
 
     unsigned int cubemapTexture = loadCubemap(faces);
+
     skyboxShader.use();
     skyboxShader.setInt("skybox", 0);
     stbi_set_flip_vertically_on_load(false);
+
     // draw in wireframe
     //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
-    unsigned int transparentTexture = loadTexture(FileSystem::getPath("resources/textures/cloud1.png").c_str(), true);
+    unsigned int transparentTexture = loadTexture(FileSystem::getPath("resources/textures/cloud2.png").c_str(), true);
     stbi_set_flip_vertically_on_load(true);
     cloudShader.use();
     cloudShader.setInt("texture1", 0);
+
+    bloomShader.use();
+    bloomShader.setInt("image", 0);
+
+    hdrShader.use();
+    hdrShader.setInt("hdrBuffer", 0);
+    hdrShader.setInt("bloomBlur", 1);
+
+    //hdr
+    unsigned int hdrFBO;
+    glGenFramebuffers(1, &hdrFBO);
+    glBindFramebuffer(GL_FRAMEBUFFER, hdrFBO);
+
+    unsigned int colorBuffers[2];
+    glGenTextures(2, colorBuffers);
+    for (unsigned int i = 0; i < 2; i++)
+    {
+        glBindTexture(GL_TEXTURE_2D, colorBuffers[i]);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, SCR_WIDTH, SCR_HEIGHT, 0, GL_RGBA, GL_FLOAT, NULL);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        // attach texture to framebuffer
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D, colorBuffers[i], 0);
+    }
+
+    // create and attach depth buffer (renderbuffer)
+    unsigned int rboDepth;
+    glGenRenderbuffers(1, &rboDepth);
+    glBindRenderbuffer(GL_RENDERBUFFER, rboDepth);
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, SCR_WIDTH, SCR_HEIGHT);
+    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, rboDepth);
+    // color attachments we'll use for rendering
+    unsigned int attachments[2] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 };
+    glDrawBuffers(2, attachments);
+    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+        std::cout << "Framebuffer not complete!" << std::endl;
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+
+    // ping-pong-framebuffer for blurring
+    unsigned int pingpongFBO[2];
+    unsigned int pingpongColorbuffers[2];
+    glGenFramebuffers(2, pingpongFBO);
+    glGenTextures(2, pingpongColorbuffers);
+    for (unsigned int i = 0; i < 2; i++)
+    {
+        glBindFramebuffer(GL_FRAMEBUFFER, pingpongFBO[i]);
+        glBindTexture(GL_TEXTURE_2D, pingpongColorbuffers[i]);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, SCR_WIDTH, SCR_HEIGHT, 0, GL_RGBA, GL_FLOAT, NULL);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE); // we clamp to the edge as the blur filter would otherwise sample repeated texture values!
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, pingpongColorbuffers[i], 0);
+        if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+            std::cout << "Framebuffer not complete!" << std::endl;
+    }
 
 
     // render loop
@@ -314,9 +382,13 @@ int main() {
         glClearColor(programState->clearColor.r, programState->clearColor.g, programState->clearColor.b, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+        glBindFramebuffer(GL_FRAMEBUFFER, hdrFBO);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
         // don't forget to enable shader before setting uniforms
         ourShader.use();
         setLights(ourShader);
+
         // view/projection transformations
         glm::mat4 projection = glm::perspective(glm::radians(programState->camera.Zoom),
                                                 (float) SCR_WIDTH / (float) SCR_HEIGHT, 0.1f, 100.0f);
@@ -347,7 +419,7 @@ int main() {
         {
             model = glm::mat4(1.0f);
             model = glm::translate(model, c);
-            model = glm::rotate(model, (float)glfwGetTime(),glm::vec3(0.0f,1.0f,0.0f));
+            //model = glm::rotate(model, (float)glfwGetTime(),glm::vec3(0.0f,1.0f,0.0f));
             model = glm::scale(model,glm::vec3(1.5f));
             cloudShader.setMat4("model", model);
             glDrawArrays(GL_TRIANGLES, 0, 6);
@@ -367,6 +439,39 @@ int main() {
         glDrawArrays(GL_TRIANGLES, 0, 36);
         glBindVertexArray(0);
         glDepthFunc(GL_LESS); // set depth function back to default
+
+
+        //load ping-pong
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        bool horizontal = true, first_iteration = true;
+        unsigned int amount = 10;
+        bloomShader.use();
+        for (unsigned int i = 0; i < amount; i++)
+        {
+            glBindFramebuffer(GL_FRAMEBUFFER, pingpongFBO[horizontal]);
+            bloomShader.setInt("horizontal", horizontal);
+            glBindTexture(GL_TEXTURE_2D, first_iteration ? colorBuffers[1] : pingpongColorbuffers[!horizontal]);
+
+            renderQuad();
+
+            horizontal = !horizontal;
+            if (first_iteration)
+                first_iteration = false;
+        }
+
+        // load hdr and bloom
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        hdrShader.use();
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, colorBuffers[0]);
+        glActiveTexture(GL_TEXTURE1);
+        glBindTexture(GL_TEXTURE_2D, pingpongColorbuffers[!horizontal]);
+        hdrShader.setBool("hdr", hdr);
+        hdrShader.setBool("bloom",bloom);
+        hdrShader.setFloat("exposure", exposure);
+        renderQuad();
+
 
         if (programState->ImGuiEnabled)
             DrawImGui(programState);
@@ -394,6 +499,37 @@ int main() {
     glfwTerminate();
     return 0;
 }
+
+
+unsigned int quadVAO = 0;
+unsigned int quadVBO;
+void renderQuad()
+{
+    if (quadVAO == 0)
+    {
+        float quadVertices[] = {
+                // positions        // texture Coords
+                -1.0f,  1.0f, 0.0f, 0.0f, 1.0f,
+                -1.0f, -1.0f, 0.0f, 0.0f, 0.0f,
+                1.0f,  1.0f, 0.0f, 1.0f, 1.0f,
+                1.0f, -1.0f, 0.0f, 1.0f, 0.0f,
+        };
+        // setup plane VAO
+        glGenVertexArrays(1, &quadVAO);
+        glGenBuffers(1, &quadVBO);
+        glBindVertexArray(quadVAO);
+        glBindBuffer(GL_ARRAY_BUFFER, quadVBO);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(quadVertices), &quadVertices, GL_STATIC_DRAW);
+        glEnableVertexAttribArray(0);
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+        glEnableVertexAttribArray(1);
+        glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+    }
+    glBindVertexArray(quadVAO);
+    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+    glBindVertexArray(0);
+}
+
 
 // process all input: query GLFW whether relevant keys are pressed/released this frame and react accordingly
 // ---------------------------------------------------------------------------------------------------------
@@ -501,6 +637,31 @@ void key_callback(GLFWwindow *window, int key, int scancode, int action, int mod
              << programState->camera.Position.y << " "
              << programState->camera.Position.z << '\n';
     }
+
+    if (key == GLFW_KEY_H && action == GLFW_PRESS)
+    {
+        hdr = !hdr;
+
+    }
+
+    if (key == GLFW_KEY_L && action == GLFW_PRESS)
+    {
+        bloom = !bloom;
+
+    }
+
+    if (key == GLFW_KEY_Q && action == GLFW_PRESS)
+    {
+        if (exposure > 0.0f)
+            exposure -= 0.1f;
+        else
+            exposure = 0.0f;
+    }
+    else if (key == GLFW_KEY_E && action == GLFW_PRESS)
+    {
+        exposure += 0.1f;
+    }
+
 }
 
 void setLights(Shader shaderName){
