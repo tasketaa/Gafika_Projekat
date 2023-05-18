@@ -178,9 +178,11 @@ int main() {
     // -------------------------
     Shader ourShader("resources/shaders/model_lighting.vs", "resources/shaders/model_lighting.fs");
     Shader skyboxShader("resources/shaders/skybox.vs", "resources/shaders/skybox.fs");
+    Shader boxShader("resources/shaders/box.vs", "resources/shaders/box.fs");
     Shader cloudShader("resources/shaders/clouds.vs", "resources/shaders/clouds.fs");
     Shader hdrShader("resources/shaders/hdr.vs", "resources/shaders/hdr.fs");
     Shader bloomShader("resources/shaders/blur.vs", "resources/shaders/blur.fs");
+
 
     // load models
     // -----------
@@ -188,6 +190,50 @@ int main() {
     Model ourModel("resources/objects/kucanabrdu/A54GBYEII07GV8OC2EIX7M6TW.obj");
     stbi_set_flip_vertically_on_load(true);
     ourModel.SetShaderTextureNamePrefix("material.");
+
+    float boxVertices[] = {
+            -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f,  0.0f,
+            0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f,  0.0f,
+            0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f,  1.0f,
+            0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f,  1.0f,
+            -0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f,  1.0f,
+            -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f,  0.0f,
+
+            -0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  0.0f,  0.0f,
+            0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  1.0f,  0.0f,
+            0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  1.0f,  1.0f,
+            0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  1.0f,  1.0f,
+            -0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  0.0f,  1.0f,
+            -0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  0.0f,  0.0f,
+
+            -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  1.0f,  0.0f,
+            -0.5f,  0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  1.0f,  1.0f,
+            -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  0.0f,  1.0f,
+            -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  0.0f,  1.0f,
+            -0.5f, -0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  0.0f,  0.0f,
+            -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  1.0f,  0.0f,
+
+            0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  1.0f,  0.0f,
+            0.5f,  0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  1.0f,  1.0f,
+            0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  0.0f,  1.0f,
+            0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  0.0f,  1.0f,
+            0.5f, -0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  0.0f,  0.0f,
+            0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  1.0f,  0.0f,
+
+            -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  0.0f,  1.0f,
+            0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  1.0f,  1.0f,
+            0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  1.0f,  0.0f,
+            0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  1.0f,  0.0f,
+            -0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  0.0f,  0.0f,
+            -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  0.0f,  1.0f,
+
+            -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  0.0f,  1.0f,
+            0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  1.0f,  1.0f,
+            0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  1.0f,  0.0f,
+            0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  1.0f,  0.0f,
+            -0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  0.0f,  0.0f,
+            -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  0.0f,  1.0f
+    };
 
 
     float skyboxVertices[] = {
@@ -245,6 +291,23 @@ int main() {
             1.0f,  0.5f,  0.0f,  1.0f,  0.0f
     };
 
+    // box VAO
+    unsigned int boxVBO, boxVAO;
+    glGenVertexArrays(1, &boxVAO);
+    glGenBuffers(1, &boxVBO);
+
+    glBindBuffer(GL_ARRAY_BUFFER, boxVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(boxVertices), boxVertices, GL_STATIC_DRAW);
+
+    glBindVertexArray(boxVAO);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
+    glEnableVertexAttribArray(2);
+
+
     //transparent VAO
     unsigned int transparentVAO, transparentVBO;
     glGenVertexArrays(1, &transparentVAO);
@@ -257,6 +320,7 @@ int main() {
     glEnableVertexAttribArray(1);
     glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
     glBindVertexArray(0);
+
     vector<glm::vec3> clouds
             {
                     glm::vec3(-6.5f, 2.0f, -0.48f),
@@ -266,6 +330,7 @@ int main() {
                     glm::vec3( 6.0f, 4.5f, -1.6f),
                     glm::vec3( 0.0f, 4.0f, -1.6f)
             };
+
 
     stbi_set_flip_vertically_on_load(false);
 
@@ -289,6 +354,7 @@ int main() {
                     FileSystem::getPath("resources/textures/skybox/back.jpg")
             };
 
+    unsigned int boxTexture = loadTexture(FileSystem::getPath("resources/textures/container.jpg").c_str(), true);
     unsigned int cubemapTexture = loadCubemap(faces);
 
     skyboxShader.use();
@@ -309,6 +375,19 @@ int main() {
     hdrShader.use();
     hdrShader.setInt("hdrBuffer", 0);
     hdrShader.setInt("bloomBlur", 1);
+
+    boxShader.use();
+    boxShader.setInt("texture1", 0);
+    //boxShader.setInt("material.ambient", 0);
+    //boxShader.setInt("material.diffuse", 1);
+    //boxShader.setInt("material.specular", 2);
+
+    // box texture
+    //stbi_set_flip_vertically_on_load(true);
+    //unsigned int boxDiffuse = loadTexture(FileSystem::getPath("resources/textures/glass.jpg").c_str(), true);
+    //unsigned int boxSpecular = loadTexture(FileSystem::getPath("resources/textures/glass.jpg").c_str(), true);
+    //unsigned int boxAmbient = loadTexture(FileSystem::getPath("resources/textures/glass.jpg").c_str(), true);
+    //stbi_set_flip_vertically_on_load(false);
 
     //hdr
     unsigned int hdrFBO;
@@ -399,14 +478,30 @@ int main() {
 
         // render the loaded model
         glm::mat4 model = glm::mat4(1.0f);
-        model = glm::translate(model,
-                               programState->houseOnTheHillPosition); // translate it down so it's at the center of the scene
-        model = glm::scale(model, glm::vec3(programState->houseOnTheHillScale));    // it's a bit too big for our scene, so scale it down
+        //model = glm::rotate(model, (float)glfwGetTime(), glm::vec3(0.0f, 1.0f, 0.0f));
+        model = glm::translate(model, programState->houseOnTheHillPosition);
+        model = glm::scale(model, glm::vec3(programState->houseOnTheHillScale));   
         ourShader.setMat4("model", model);
         ourModel.Draw(ourShader);
 
-
         glDisable(GL_CULL_FACE);
+
+        // box
+        boxShader.use();
+        setLights(boxShader);
+        boxShader.setFloat("material.shininess", 64.0f);
+        boxShader.setMat4("projection", projection);
+        boxShader.setMat4("view", view);
+
+        glBindVertexArray(boxVAO);
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, boxTexture);
+        model = glm::mat4(1.0f);
+        model = glm::translate(model, glm::vec3(-0.25f, -3.0f, 0.0f));
+        model = glm::scale(model, glm::vec3(2.0f));
+        boxShader.setMat4("model", model);
+        glDrawArrays(GL_TRIANGLES, 0, 36);
+
 
         //clouds (blending)
         cloudShader.use();
@@ -484,6 +579,8 @@ int main() {
         glfwPollEvents();
     }
 
+    glDeleteVertexArrays(1, &boxVAO);
+    glDeleteBuffers(1, &boxVBO);
     glDeleteVertexArrays(1, &transparentVAO);
     glDeleteBuffers(1, &transparentVBO);
     glDeleteVertexArrays(1, &skyboxVAO);
@@ -665,6 +762,7 @@ void key_callback(GLFWwindow *window, int key, int scancode, int action, int mod
 }
 
 void setLights(Shader shaderName){
+    
     shaderName.setVec3("light.position", lightPosition);
     shaderName.setVec3("viewPos", programState->camera.Position);
 
@@ -673,7 +771,8 @@ void setLights(Shader shaderName){
     shaderName.setVec3("dirLight.ambient", 0.05f, 0.05f, 0.05f);
     shaderName.setVec3("dirLight.diffuse", 0.4f, 0.4f, 0.4f);
     shaderName.setVec3("dirLight.specular", 0.5f, 0.5f, 0.5f);
-    //pointlight properties
+
+    // pointlight properties
     shaderName.setVec3("pointLights[0].position", lightPosition);
     shaderName.setVec3("pointLights[0].ambient", 0.05f, 0.05f, 0.05f);
     shaderName.setVec3("pointLights[0].diffuse", 0.8f, 0.8f, 0.8f);
@@ -681,13 +780,15 @@ void setLights(Shader shaderName){
     shaderName.setFloat("pointLights[0].constant", 1.0f);
     shaderName.setFloat("pointLights[0].linear", 0.09f);
     shaderName.setFloat("pointLights[0].quadratic", 0.032f);
+
     // spotLight
     shaderName.setVec3("spotLight.position", programState->camera.Position);
     shaderName.setVec3("spotLight.direction", programState->camera.Front);
     shaderName.setVec3("spotLight.ambient", 0.0f, 0.0f, 0.0f);
+    
     if(spotLightOn){
-        shaderName.setVec3("spotLight.diffuse", 1.0f, 1.0f, 1.0f);
-        shaderName.setVec3("spotLight.specular", 1.0f, 1.0f, 1.0f);
+        shaderName.setVec3("spotLight.diffuse", 25.0f, 25.0f, 25.0f);
+        shaderName.setVec3("spotLight.specular", 25.0f, 25.0f, 25.0f);
     }
     else{
         shaderName.setVec3("spotLight.diffuse", 0.0f, 0.0f, 0.0f);
