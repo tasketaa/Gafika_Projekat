@@ -354,7 +354,7 @@ int main() {
                     FileSystem::getPath("resources/textures/skybox/back.jpg")
             };
 
-    unsigned int boxTexture = loadTexture(FileSystem::getPath("resources/textures/container.jpg").c_str(), true);
+    unsigned int boxTexture = loadTexture(FileSystem::getPath("resources/textures/poklon.jpg").c_str(), true);
     unsigned int cubemapTexture = loadCubemap(faces);
 
     skyboxShader.use();
@@ -478,7 +478,7 @@ int main() {
 
         // render the loaded model
         glm::mat4 model = glm::mat4(1.0f);
-        //model = glm::rotate(model, (float)glfwGetTime(), glm::vec3(0.0f, 1.0f, 0.0f));
+        model = glm::rotate(model, (float)glfwGetTime(), glm::vec3(0.0f, 1.0f, 0.0f));
         model = glm::translate(model, programState->houseOnTheHillPosition);
         model = glm::scale(model, glm::vec3(programState->houseOnTheHillScale));   
         ourShader.setMat4("model", model);
