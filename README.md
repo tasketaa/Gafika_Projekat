@@ -18,3 +18,5 @@ Iz grupe B:
 [Kuća na brdu](https://rigmodels.com/model.php?view=Mountain_House-3d-model__A54GBYEII07GV8OC2EIX7M6TW&searchkeyword=hill&manualsearch=1)
 
 Skybox - sa drugovog projekta
+
+## Autor : Tamara Stamatović, 82/2019
