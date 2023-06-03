@@ -478,8 +478,8 @@ int main() {
 
         // render the loaded model
         glm::mat4 model = glm::mat4(1.0f);
-        model = glm::rotate(model, (float)glfwGetTime(), glm::vec3(0.0f, 1.0f, 0.0f));
         model = glm::translate(model, programState->houseOnTheHillPosition);
+        //model = glm::rotate(model, (float)glfwGetTime(), glm::vec3(0.0f, 1.0f, 0.0f));
         model = glm::scale(model, glm::vec3(programState->houseOnTheHillScale));   
         ourShader.setMat4("model", model);
         ourModel.Draw(ourShader);
@@ -498,6 +498,7 @@ int main() {
         glBindTexture(GL_TEXTURE_2D, boxTexture);
         model = glm::mat4(1.0f);
         model = glm::translate(model, glm::vec3(-0.25f, -3.0f, 0.0f));
+        model = glm::rotate(model, (float)glfwGetTime(), glm::vec3(0.0f, 1.0f, 0.0f));
         model = glm::scale(model, glm::vec3(2.0f));
         boxShader.setMat4("model", model);
         glDrawArrays(GL_TRIANGLES, 0, 36);
@@ -510,6 +511,7 @@ int main() {
         glBindVertexArray(transparentVAO);
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, transparentTexture);
+        glDisable(GL_CULL_FACE);
         for (const glm::vec3& c : clouds)
         {
             model = glm::mat4(1.0f);
