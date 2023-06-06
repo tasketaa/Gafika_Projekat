@@ -19,4 +19,6 @@ Iz grupe B:
 
 Skybox - sa drugovog projekta
 
+[Video snimak projekta](https://youtu.be/w6IPoL89sbM)
+
 ## Autor : Tamara Stamatović, 82/2019
